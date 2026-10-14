@@ -427,8 +427,13 @@ async function initSetupFlow() {
     downloadLink.style.display = "none";
   }
 
+  // true while the automatic import (download link) is running: its errors are
+  // shown on the loading screen itself instead of sending the person to the setup page.
+  let autoImportActive = false;
+
   const showError = (key, options) => {
-    cypherLoader.fail();
+    if (autoImportActive) cypherLoader.error(t(key, options));
+    else cypherLoader.fail();
     errorBox.style.display = "block";
     setText(errorBox, key, options);
   };
@@ -474,6 +479,7 @@ async function initSetupFlow() {
 
   // source: a File (manual pick) or { url } (automatic import)
   const runImport = async (source) => {
+    autoImportActive = !(source instanceof File);
     errorBox.style.display = "none";
     document
       .querySelectorAll(".setup-actions-panel")
@@ -542,7 +548,8 @@ async function initSetupFlow() {
           cypherLoader.progress("download", 0);
           cypherLoader.detail(null);
         } else {
-          cypherLoader.fail();
+          if (autoImportActive) cypherLoader.error(t("progress.verifyFailed", { reason }));
+          else cypherLoader.fail();
           setText(progressLabel, "progress.verifyFailed", { reason });
         }
         document
