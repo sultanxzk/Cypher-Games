@@ -61,6 +61,7 @@ async function loadData() {
         throw new Error(`Failed to load data package: ${response.status} ${response.url}`);
     }
 
+    const totalSize = Number(response.headers.get('Content-Length')) || dataSize;
     const reader = response.body.getReader();
     let receivedLength = 0;
     let chunks = [];
@@ -72,7 +73,7 @@ async function loadData() {
         chunks.push(value);
         receivedLength += value.length;
         if (typeof setStatus === "function") {
-            setStatus(`Downloading...(${receivedLength}/${dataSize})`);
+            setStatus(`Downloading...(${receivedLength}/${totalSize})`);
         }
     }
     let buffer = new Uint8Array(receivedLength);
@@ -102,11 +103,22 @@ async function startGame(e) {
     document.querySelector('.click-to-play').style.display = 'none';
     loaderContainer.style.display = "flex";
     introContainer.hidden = false;
-    intro.play();
+    // With the full-screen loading screen (#cypher-loader) the intro video is skipped.
+    if (!document.body.classList.contains('cypher-loading')) intro.play();
 
     await window.vcUserData?.prepareLaunch();
-    const dataBuffer = await loadData();
+    let dataBuffer;
+    try {
+        dataBuffer = await loadData();
+    } catch (error) {
+        console.error('[loader] game data download failed:', error);
+        const message = error && error.message ? error.message : String(error);
+        window.cypherLoader?.error(message);
+        statusElement.textContent = t("errors.generic", { message }); // manual (no loading screen) mode
+        return;
+    }
     spinnerElement.hidden = true;
+    window.cypherLoader?.ready();
     setStatus(t("loader.clickToContinue"));
     introContainer.hidden = false;
     introContainer.style.cursor = 'pointer';
@@ -133,6 +145,7 @@ function setStatus(text) {
     if (match) {
         const [current, total] = match.slice(2, 4).map(Number);
         const percent = (current / total * 100).toFixed(0);
+        window.cypherLoader?.progress("download", Math.min(Number(percent), 100));
         statusElement.textContent = t("loader.downloadingPercent", { percent });
         progressElement.value = current;
         progressElement.max = total;

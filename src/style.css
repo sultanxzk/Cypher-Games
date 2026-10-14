@@ -1488,3 +1488,182 @@ video {
     grid-row: 2;
   }
 }
+
+/* ---------------------------------------------------------------------------
+   Loading screen (#cypher-loader): black, one big percentage, thin bar.
+   Visible while body.cypher-loading; hidden once the game starts or when the
+   setup page has to take over (error / manual import).
+   ------------------------------------------------------------------------- */
+body.cypher-loading {
+  overflow: hidden;
+}
+
+.cl {
+  display: none;
+}
+
+body.cypher-loading .cl {
+  position: fixed;
+  inset: 0;
+  z-index: 90; /* above the setup page (20) and intro (50), below touch controls (100) */
+  display: block;
+  color: #fff;
+  background: radial-gradient(ellipse at 50% 50%, #131313 0%, #000 72%);
+  font-family: "Helvetica Neue", Helvetica, Arial, system-ui, sans-serif;
+  text-transform: uppercase;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+body.gameIsStarted .cl {
+  display: none !important;
+}
+
+.cl-brand,
+.cl-meta,
+.cl-foot {
+  position: absolute;
+  font-size: 11px;
+  letter-spacing: 0.28em;
+  color: #7a7a7a;
+}
+
+.cl-brand {
+  top: 28px;
+  left: 36px;
+  font-weight: 700;
+  color: #fff;
+}
+
+.cl-brand span {
+  font-weight: 400;
+  color: #7a7a7a;
+}
+
+.cl-meta {
+  top: 28px;
+  right: 36px;
+}
+
+.cl-foot {
+  bottom: 28px;
+}
+
+.cl-foot-left {
+  left: 36px;
+}
+
+.cl-foot-right {
+  right: 36px;
+}
+
+.cl-center {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 0 24px;
+  text-align: center;
+}
+
+.cl-label {
+  font-size: 13px;
+  letter-spacing: 0.4em;
+  color: #8a8a8a;
+  padding-left: 0.4em; /* balances the trailing letter-spacing */
+}
+
+.cl-number {
+  margin: 0.12em 0 0.2em;
+  font-size: clamp(110px, 30vh, 280px);
+  font-weight: 300;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  min-width: 3ch;
+}
+
+.cl-unit {
+  margin-left: 0.06em;
+  font-size: 0.22em;
+  font-weight: 300;
+  letter-spacing: 0;
+  color: #7a7a7a;
+  vertical-align: top;
+  position: relative;
+  top: 0.35em;
+}
+
+.cl-bar {
+  width: min(440px, 72vw);
+  height: 2px;
+  background: rgba(255, 255, 255, 0.14);
+  overflow: hidden;
+}
+
+.cl-bar-fill {
+  width: 0%;
+  height: 100%;
+  background: #fff;
+  transition: width 0.25s ease-out;
+}
+
+.cl-detail {
+  min-height: 1.4em;
+  margin-top: 26px;
+  font-size: 11px;
+  letter-spacing: 0.28em;
+  color: #6a6a6a;
+}
+
+/* Finished downloading: waiting for the click the browser needs for audio. */
+.cl-ready {
+  cursor: pointer;
+}
+
+.cl-ready .cl-detail {
+  color: #fff;
+  animation: cl-pulse 1.6s ease-in-out infinite;
+}
+
+.cl-error .cl-label {
+  color: #ff6b6b;
+}
+
+.cl-error .cl-bar-fill {
+  background: #ff6b6b;
+}
+
+.cl-error .cl-detail {
+  max-width: 560px;
+  text-transform: none;
+  letter-spacing: 0.04em;
+  line-height: 1.5;
+  color: #b0b0b0;
+}
+
+@keyframes cl-pulse {
+  50% {
+    opacity: 0.35;
+  }
+}
+
+@media (max-width: 640px) {
+  .cl-brand,
+  .cl-meta {
+    top: 18px;
+  }
+  .cl-brand,
+  .cl-foot-left {
+    left: 18px;
+  }
+  .cl-meta,
+  .cl-foot-right {
+    right: 18px;
+  }
+  .cl-foot {
+    bottom: 18px;
+  }
+}

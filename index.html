@@ -15,7 +15,7 @@
   </head>
 
   <body
-    class="app-body"
+    class="app-body cypher-loading"
     data-is-touch="0"
     data-state-car="0"
     data-state-car-gun="0"
@@ -32,6 +32,25 @@
     data-state-scope-mode="0"
     data-state-scope-gun="0"
   >
+    <!-- Full-screen loading screen: only shows the game loading. It is removed
+         (main.js -> cypherLoader.fail) if the setup page is needed instead. -->
+    <div id="cypher-loader" class="cl" role="status" aria-live="polite">
+      <div class="cl-brand">CYPHER<span>GAMES</span></div>
+      <div class="cl-meta">GTA &middot; VICE CITY</div>
+
+      <div class="cl-center">
+        <div id="cl-label" class="cl-label" data-i18n="loader.label">Loading</div>
+        <div class="cl-number">
+          <span id="cl-percent">0</span><span class="cl-unit">%</span>
+        </div>
+        <div class="cl-bar"><div id="cl-bar-fill" class="cl-bar-fill"></div></div>
+        <div id="cl-detail" class="cl-detail"></div>
+      </div>
+
+      <div class="cl-foot cl-foot-left">BUILD <span id="cl-build"></span></div>
+      <div id="cl-net" class="cl-foot cl-foot-right">ONLINE</div>
+    </div>
+
     <div class="rotate-overlay">
       <span class="rotate-overlay-icon">&#8635;</span>
       <span data-i18n="rotate">Rotate your device</span>
