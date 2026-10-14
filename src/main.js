@@ -12,6 +12,91 @@ const ASSET_RELEASE_URL = import.meta.env.VITE_ASSET_URL;
 
 const BASE = import.meta.env.BASE_URL;
 
+// --- Loading screen -------------------------------------------------------
+// #cypher-loader covers the whole page and only shows the game loading
+// (percentage + bar). game.js reports the download through window.cypherLoader.
+// If the setup page is needed instead (error, no game file, manual import),
+// fail() removes the overlay so that page shows up.
+const cypherLoader = (() => {
+  const root = document.getElementById("cypher-loader");
+  const label = document.getElementById("cl-label");
+  const percent = document.getElementById("cl-percent");
+  const fill = document.getElementById("cl-bar-fill");
+  const detail = document.getElementById("cl-detail");
+  const net = document.getElementById("cl-net");
+  const build = document.getElementById("cl-build");
+
+  const STAGE_LABELS = {
+    import: "loader.importing",
+    download: "loader.label",
+    ready: "loader.ready",
+  };
+  let stage = "";
+  let active = true;
+
+  const paintNet = () => {
+    setText(net, navigator.onLine ? "loader.online" : "loader.offline");
+  };
+  if (build) build.textContent = __BUILD_DATE__;
+  window.addEventListener("online", paintNet);
+  window.addEventListener("offline", paintNet);
+
+  const live = () =>
+    active &&
+    root &&
+    !root.hidden &&
+    !document.body.classList.contains("gameIsStarted");
+
+  return {
+    start() {
+      paintNet();
+    },
+    // stage: "import" | "download" ; pct: 0-100
+    progress(nextStage, pct) {
+      if (!live()) return;
+      if (nextStage !== stage) {
+        stage = nextStage;
+        setText(label, STAGE_LABELS[nextStage] || "loader.label");
+        root.classList.remove("cl-ready", "cl-error");
+      }
+      const value = Math.max(0, Math.min(100, Math.round(Number(pct) || 0)));
+      percent.textContent = String(value);
+      fill.style.width = `${value}%`;
+    },
+    detail(key, options) {
+      if (!live()) return;
+      if (key) setText(detail, key, options);
+      else setRawText(detail, "");
+    },
+    // Everything is downloaded; the game now waits for one click (browsers
+    // need a user gesture to enable audio / pointer lock).
+    ready() {
+      if (!live()) return;
+      stage = "ready";
+      setText(label, STAGE_LABELS.ready);
+      percent.textContent = "100";
+      fill.style.width = "100%";
+      setText(detail, "loader.clickToContinueShort");
+      root.classList.add("cl-ready");
+    },
+    error(message) {
+      if (!root || document.body.classList.contains("gameIsStarted")) return;
+      stage = "error";
+      root.classList.remove("cl-ready");
+      root.classList.add("cl-error");
+      setText(label, "loader.failed");
+      setRawText(detail, String(message || ""));
+    },
+    // Give the page back to the setup UI.
+    fail() {
+      active = false;
+      document.body.classList.remove("cypher-loading");
+      if (root) root.hidden = true;
+    },
+  };
+})();
+window.cypherLoader = cypherLoader;
+
 // --- Automation (personal/private deployment) ---------------------------
 // game.tar.gz sits next to the site files (public/game.tar.gz -> /game.tar.gz).
 // Override with VITE_GAME_URL if you host it somewhere else.
@@ -343,6 +428,7 @@ async function initSetupFlow() {
   }
 
   const showError = (key, options) => {
+    cypherLoader.fail();
     errorBox.style.display = "block";
     setText(errorBox, key, options);
   };
@@ -417,6 +503,15 @@ async function initSetupFlow() {
       );
 
       if (message.type === "progress") {
+        cypherLoader.progress("import", message.pct);
+        cypherLoader.detail(
+          {
+            reading: "progress.reading",
+            decompressing: "progress.decompressing",
+            extracting: "progress.extracting",
+          }[message.phase] || "progress.working",
+          { done: message.done || 0, total: message.total || "" },
+        );
         progressBar.style.width = `${message.pct}%`;
         progressPercent.textContent = `${message.pct}%`;
         const labels = {
@@ -441,8 +536,15 @@ async function initSetupFlow() {
           isReady ? "ready" : "missing",
         );
         setPlayAvailability(isReady);
-        if (isReady) setText(progressLabel, "progress.complete");
-        else setText(progressLabel, "progress.verifyFailed", { reason });
+        if (isReady) {
+          setText(progressLabel, "progress.complete");
+          // Next stage: the game data download (reported by game.js).
+          cypherLoader.progress("download", 0);
+          cypherLoader.detail(null);
+        } else {
+          cypherLoader.fail();
+          setText(progressLabel, "progress.verifyFailed", { reason });
+        }
         document
           .querySelectorAll(".setup-actions-panel")
           .forEach((element) => (element.style.opacity = "1"));
@@ -534,6 +636,7 @@ async function initSetupFlow() {
   }
 
   console.log("[setup] waiting for file selection");
+  cypherLoader.fail();
 }
 
 function initCanvasBindings() {
@@ -583,12 +686,16 @@ function initLanguagePicker() {
 
 async function boot() {
   applyTranslations();
+  // Manual mode (?autostart=0 / ?autoimport=0): show the setup page, not the loader.
+  if (!AUTO_START || !AUTO_IMPORT) cypherLoader.fail();
+  else cypherLoader.start();
   initLanguagePicker();
   initCanvasBindings();
   initOrientationLock();
 
   const missing = checkBrowserCompatibility();
   if (missing.length > 0) {
+    cypherLoader.fail();
     const storageStatus = document.getElementById("storage-status");
     const errorBox = document.getElementById("setup-error");
     if (storageStatus) {
@@ -616,6 +723,7 @@ async function boot() {
 // of leaving a Start button that does nothing.
 function showScriptLoadError(err) {
   console.error("[boot] failed to load a game script:", err);
+  cypherLoader.fail();
   const file = String(err && err.message).split("/").pop();
 
   const startButton = document.getElementById("click-to-play-button");

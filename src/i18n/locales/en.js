@@ -62,6 +62,13 @@ export default {
     downloading: "Downloading...",
     downloadingPercent: "Downloading {{percent}}%",
     clickToContinue: "Click to continue...",
+    label: "Loading",
+    importing: "Importing",
+    ready: "Ready",
+    clickToContinueShort: "Click to continue",
+    failed: "Loading failed",
+    online: "Online",
+    offline: "Offline",
     webglLost: "WebGL context lost. Please reload the page.",
   },
   saves: {
